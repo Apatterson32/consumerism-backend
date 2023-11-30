@@ -1,18 +1,51 @@
 const router = require('express').Router();
 const { Product, Category, Tag, ProductTag } = require('../../models');
 
-// The `/api/products` endpoint
+
+// Middleware for handling errors
+function errorHandler(err, req, res, next) {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
+}
+
 
 // get all products
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   // find all products
   // be sure to include its associated Category and Tag data
+  try {
+    const products = await Product.findAll({
+      include: [
+        { model: Category },
+        { model: Tag, through: ProductTag },
+      ],
+    });
+    res.json(products);
+  } catch (err) {
+    next(err); // Pass the error to the errorHandler middleware
+  }
 });
 
 // get one product
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   // find a single product by its `id`
   // be sure to include its associated Category and Tag data
+  try {
+    const product = await Product.findByPk(req.params.id, {
+      include: [
+        { model: Category },
+        { model: Tag, through: ProductTag },
+      ],
+});
+
+if (!product) {
+  return res.status(404).json({ error: 'Product not found' });
+}
+
+res.json(product);
+} catch (err) {
+next(err);
+}
 });
 
 // create new product
@@ -92,8 +125,30 @@ router.put('/:id', (req, res) => {
     });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   // delete one product by its `id` value
+  try {
+    const rowsAffected = await Product.destroy({
+      where: {
+        id: req.params.id,
+      },
+      include: [
+        {
+          model: ProductTag,
+        },
+      ],
+    });
+
+    if (rowsAffected === 0) {
+      res.status(404).json({ message: 'No product found with this id!' });
+      return;
+    }
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
+
 
 module.exports = router;
