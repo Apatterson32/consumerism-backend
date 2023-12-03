@@ -29,7 +29,6 @@ npm install
 
 ```
 
-
 3. Set up your MySQL database and update your connection details in the `.env` file
 
 4. Start the application with:
